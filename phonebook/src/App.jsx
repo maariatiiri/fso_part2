@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import personService from './services/persons'
+import Notification from './components/Notification'
 
 const Person = ({person, deletePerson}) => {
   return (
@@ -53,6 +54,9 @@ const App = () => {
   const [newName, setNewName] = useState('')
   const [newNumber, setNewNumber] = useState('')
   const [filter, setFilter] = useState('')
+  const [notifMessage, setNotifMessage] = useState(null)
+  const [errorMessage, setErrorMessage] = useState(null)
+  
 
   useEffect(() => {
     personService
@@ -75,6 +79,22 @@ const App = () => {
             .update(person.id, newPerson)
             .then(returnedPerson => {
               setPersons(persons.map(p => p.id === person.id ? newPerson : p))
+              setNewName('')
+              setNewNumber('')
+              setNotifMessage(
+                `Changed number of ${newName}`
+              )
+              setTimeout(() => {
+                setNotifMessage(null)
+              }, 5000)
+            })
+            .catch(error => {
+              setErrorMessage(
+                `Information of ${newName} has already been removed from the server`
+              )
+              setTimeout(() => {
+                setErrorMessage(null)
+              }, 5000)
             })
         }
     }
@@ -86,6 +106,12 @@ const App = () => {
           setPersons(persons.concat(returnedPerson))
           setNewName('')
           setNewNumber('')
+          setNotifMessage(
+          `Added ${newName}`
+          )
+          setTimeout(() => {
+            setNotifMessage(null)
+          }, 5000)
         })
     }
   }
@@ -109,6 +135,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={notifMessage} classname="notif" />
+      <Notification message={errorMessage} classname="error"/>
       <Filter value={filter} handler={handleFilterChange}/>
       <h2>add a new</h2>
       <PersonForm newName={newName} nameHandler={handleNameChange}
