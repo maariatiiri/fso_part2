@@ -1,7 +1,14 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import personService from './services/persons'
 
-const Person = ({person}) => <p>{person.name} {person.number}</p>
+const Person = ({person, deletePerson}) => {
+  return (
+    <div>
+      {person.name} {person.number}
+      <button onClick={deletePerson}>delete </button>
+    </div>
+  )
+}
 
 const Filter = ({value, handler}) => {
   return (
@@ -29,10 +36,14 @@ const PersonForm = ({newName, nameHandler, newNumber, numberHandler, onSubmit}) 
   )
 }
 
-const Persons = ({personsToShow}) => {
+const Persons = ({personsToShow, deletePerson}) => {
   return (
     <div>
-        {personsToShow.map(person => <Person person={person} key={person.id}/>)}
+        {personsToShow.map(person => <Person 
+          person={person} 
+          deletePerson={() => deletePerson(person.name, person.id)}
+          key={person.id}/>
+        )}
     </div>
   )
 }
@@ -44,10 +55,13 @@ const App = () => {
   const [filter, setFilter] = useState('')
 
   useEffect(() => {
-    axios
-      .get('http://localhost:3001/persons')
-      .then(response => setPersons(response.data))
+    personService
+      .getAll()
+      .then(initialPersons => {
+        setPersons(initialPersons)
+      })
   }, [])
+
 
   const personsToShow = persons.filter(person => person.name.toLowerCase().includes(filter.toLowerCase()))
 
@@ -58,11 +72,24 @@ const App = () => {
     }
     else {
       const newPerson = {name: newName, number: newNumber, id: String(persons.length + 1)}
-      setPersons(persons.concat(newPerson))
-      setNewName('')
-      setNewNumber('')
+      personService
+        .create(newPerson)
+        .then(returnedPerson => {
+          setPersons(persons.concat(returnedPerson))
+          setNewName('')
+          setNewNumber('')
+        })
     }
-    
+  }
+
+  const deletePerson = (name, id) => {
+    if (window.confirm(`Delete ${name}?`)) {
+      personService
+      .remove(id)
+      .then(returnedPerson => {
+        setPersons(persons.filter(p => p.id !== id))
+      })
+    }
   }
 
   const handleNameChange = (event) => setNewName(event.target.value)
@@ -80,7 +107,7 @@ const App = () => {
        newNumber={newNumber} numberHandler={handleNumberChange} 
        onSubmit={addPerson}/>
       <h2>Numbers</h2>
-      <Persons personsToShow={personsToShow}/>
+      <Persons personsToShow={personsToShow} deletePerson={deletePerson}/>
     </div>
   )
 }
