@@ -13,7 +13,8 @@ const CountryItem = ({name, onClick}) => {
   return <li>{name} <button onClick={() => onClick(name)}>show </button> </li>
 }
 
-const CountryInfo = ({country}) => {
+const CountryInfo = ({country, weather}) => {
+  const iconSrc = "https://openweathermap.org/payload/api/media/file/"+weather.icon+".png"
   return (
     <div>
       <h1>{country.name}</h1>
@@ -23,15 +24,17 @@ const CountryInfo = ({country}) => {
       <ul>
         {country.languages.map(l => <li key={l}>{l}</li>)}
       </ul>
-      <img 
-      src={country.flag}
-      />
+      <img src={country.flag}/>
+      <h2>Weather in {country.capital}</h2>
+      <div>Temperature {weather.temperature} Celsius</div>
+      <img src={'https://openweathermap.org/payload/api/media/file/'+weather.icon+'.png'}/>
+      <div>Wind {weather.wind} m/s</div>
     </div>
   )
 
 }
 
-const CountryView = ({countries, country, onClick}) => {
+const CountryView = ({countries, country, weather, onClick}) => {
   if (countries.length > 10) {
     return <div>Too many matches, specify another filter</div>
   }
@@ -44,7 +47,7 @@ const CountryView = ({countries, country, onClick}) => {
   }
   else if (countries.length === 1 && country) {
     return (
-      <CountryInfo country={country}/>
+      <CountryInfo country={country} weather={weather}/>
     )
   }
   else if (countries.length == 0) {
@@ -58,6 +61,7 @@ const App = () => {
   const [search, setSearch] = useState('')
   const [countryList, setCountryList] = useState([])
   const [country, setCountry] = useState(null)
+  const [weather, setWeather] = useState(null)
 
   const countriesToShow = countryList.filter(c => c.toLowerCase().includes(search.toLowerCase()))
 
@@ -89,17 +93,26 @@ const App = () => {
       .getCountryInfo(countryName)
       .then(info => {
         const newCountry = {name: info.name.common, capital: info.capital, area: info.area,
-          languages: Object.values(info.languages), flag: info.flags.png
+          languages: Object.values(info.languages), flag: info.flags.png, capitalInfo: 
+          info.capitalInfo.latlng 
         }
         setCountry(newCountry)
+        countryService
+          .getWeatherInfo(info.capitalInfo.latlng[0], info.capitalInfo.latlng[1])
+          .then(
+            weatherInfo => {
+              const newWeather = {temperature: weatherInfo.main.temp, wind: weatherInfo.wind.speed, 
+                icon: weatherInfo.weather[0].icon }
+              setWeather(newWeather)
+            }
+          )
       })
   }
   
-
   return (
     <div>
       <SearchField value={search} onChange={handleSearch}/>
-      <CountryView countries={countriesToShow} country={country} onClick={showCountry}/>
+      <CountryView countries={countriesToShow} country={country} weather={weather} onClick={showCountry}/>
     </div>
   )
 }
